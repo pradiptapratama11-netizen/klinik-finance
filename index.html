@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#10254a"><meta name="description" content="Rekap keuangan Klinik Prima Sehat."><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./icon-192.png">
 <title>Klinik Finance Online</title>
+<script src="./config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#f3f6fb;--ink:#19263a;--muted:#66758b;--line:#e1e8f1;--blue:#2457d6;--green:#16845b;--red:#bf3f49}
@@ -12,7 +13,7 @@
 <body>
 <div class="top"><div class="wrap"><div class="brand">＋ Klinik Finance Online</div><div class="subtop">Perekapan keuangan • Satu klinik • Owner & staf keuangan</div><div class="status" id="top-status">Belum terhubung</div></div></div>
 <div id="setup" class="auth card">
-<h2>Hubungkan database klinik</h2><p class="muted">Masukkan Project URL dan anon/publishable key dari pengaturan API Supabase. Pengaturan ini tersimpan di browser perangkat ini.</p>
+<h2>Hubungkan database klinik</h2><p class="muted">Konfigurasi database biasanya sudah diatur oleh admin. Jika belum, masukkan Project URL dan anon/publishable key dari Supabase.</p>
 <div class="field"><label>Supabase Project URL</label><input id="sb-url" placeholder="https://xxxx.supabase.co"></div>
 <div class="field"><label>Supabase anon / publishable key</label><input id="sb-key" placeholder="sb_publishable_... atau anon key"></div>
 <button class="btn" id="connect">Hubungkan</button>
@@ -66,7 +67,7 @@ function go(tab){document.querySelectorAll('.panel').forEach(x=>x.classList.togg
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>go(b.dataset.tab));
 async function connect(){let url=$('sb-url').value.trim(),key=$('sb-key').value.trim();if(!url||!key)return alert('Masukkan URL dan anon/publishable key.');try{localStorage.setItem('kf_url',url);localStorage.setItem('kf_key',key);sb=window.supabase.createClient(url,key);$('setup').classList.add('hidden');$('auth').classList.remove('hidden');$('top-status').textContent='Database dikonfigurasi';let {data:{session}}=await sb.auth.getSession();if(session)await enterApp(session.user)}catch(e){alert('Gagal menginisialisasi Supabase: '+e.message)}}
 $('connect').onclick=connect;
-async function boot(){let url=localStorage.getItem('kf_url'),key=localStorage.getItem('kf_key');if(url&&key){$('sb-url').value=url;$('sb-key').value=key;sb=window.supabase.createClient(url,key);$('setup').classList.add('hidden');$('auth').classList.remove('hidden');$('top-status').textContent='Database dikonfigurasi';let {data:{session}}=await sb.auth.getSession();if(session)await enterApp(session.user)}}
+async function boot(){let shared=(window.KF_CONFIG||{}),url=(shared.url||'').trim()||localStorage.getItem('kf_url'),key=(shared.key||'').trim()||localStorage.getItem('kf_key');if(url&&key){$('sb-url').value=url;$('sb-key').value=key;sb=window.supabase.createClient(url,key);$('setup').classList.add('hidden');$('auth').classList.remove('hidden');$('top-status').textContent='Database dikonfigurasi';let {data:{session}}=await sb.auth.getSession();if(session)await enterApp(session.user)}}
 $('login').onclick=async()=>{if(!sb)return msg('auth-msg','Hubungkan database terlebih dahulu.',true);msg('auth-msg','Memeriksa akun…');let {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)return msg('auth-msg',error.message,true);await enterApp(data.user)};
 $('signout').onclick=$('logout').onclick=async()=>{if(sb)await sb.auth.signOut();user=null;profile=null;$('app').classList.add('hidden');$('auth').classList.remove('hidden');$('top-status').textContent='Keluar';};
 async function enterApp(u){user=u;$('auth').classList.add('hidden');$('app').classList.remove('hidden');$('top-status').textContent='Terhubung sebagai '+u.email;let {data,error}=await sb.from('profiles').select('id,email,role,clinic_id').eq('id',u.id).single();if(error){alert('Login berhasil, tetapi profil belum tersedia. Pastikan schema.sql sudah dijalankan dan profil pengguna dibuat. Detail: '+error.message);return}profile=data;$('who').textContent=`${u.email} • ${data.role==='owner'?'Owner':'Staf keuangan'}`;$('account-info').textContent=`Email: ${u.email} | Peran: ${data.role==='owner'?'Owner':'Staf keuangan'}`;await loadData()}
