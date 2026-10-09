@@ -1,0 +1,25 @@
+{
+  "id": "./",
+  "name": "Klinik Finance Online",
+  "short_name": "Klinik Finance",
+  "description": "Rekap transaksi, utang, dan laporan keuangan klinik.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f6fb",
+  "theme_color": "#10254a",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
