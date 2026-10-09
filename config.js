@@ -4,5 +4,5 @@
 */
 window.KF_CONFIG = {
   url: "https://gizyeejljzryzqexlydg.supabase.co",
-  key: "PASTE_SUPABASE_PUBLISHABLE_KEY_HERE"
+  key: "sb_publishable_phnL4ZJV60XSxX8MCKRyqA_ObJz6KnK"
 };
