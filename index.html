@@ -6,6 +6,7 @@
 <script src="./config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#f3f6fb;--ink:#19263a;--muted:#66758b;--line:#e1e8f1;--blue:#2457d6;--green:#16845b;--red:#bf3f49}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:1050px;margin:auto;padding-bottom:30px}.top{background:#10254a;color:white;padding:20px}.brand{font-weight:800;font-size:19px}.subtop{color:#c5d4ed;font-size:12px;margin-top:3px}.main{padding:16px}.card{background:white;border:1px solid var(--line);border-radius:15px;padding:16px;margin-bottom:13px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.metric-label{color:var(--muted);font-size:12px}.metric{font-size:22px;font-weight:800;margin-top:8px;overflow-wrap:anywhere}.green{color:var(--green)}.red{color:var(--red)}.muted{color:var(--muted);font-size:12px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}.nav{display:flex;gap:6px;overflow:auto;background:#fff;padding:10px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2}.nav button{border:0;background:transparent;color:var(--muted);padding:10px 12px;border-radius:9px;white-space:nowrap}.nav button.active{background:#edf3ff;color:var(--blue);font-weight:750}.btn{background:var(--blue);color:white;border:0;border-radius:9px;padding:11px 14px;font-weight:700}.btn.alt{background:#edf2fa;color:#263954}.btn.danger{background:#fff0f0;color:var(--red)}.btn.small{padding:7px 9px;font-size:12px}.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;flex:1;min-width:130px}.field label{font-size:12px;font-weight:650;color:#4c5b70}.field input,.field select{border:1px solid #d8e1ed;border-radius:9px;padding:11px;background:white;width:100%;min-width:0}.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}.full{grid-column:1/-1}.panel{display:none}.panel.active{display:block}h2{font-size:18px;margin:4px 0 13px}h3{font-size:16px;margin:0}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:white}table{width:100%;min-width:620px;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:11px;border-bottom:1px solid var(--line)}th{background:#f8faff;color:var(--muted);font-size:11px}tr:last-child td{border-bottom:0}.pill{display:inline-block;background:#edf2fa;border-radius:7px;padding:4px 7px;font-size:11px}.pill.in{background:#e7f7ef;color:#13734e}.pill.out{background:#fff0f0;color:#b02d36}.chart-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:13px}.chart-box{position:relative;height:270px;margin-top:12px}.chart-caption{font-size:12px;color:var(--muted);margin-top:5px}.notice{background:#fff7e4;border:1px solid #f0dfad;color:#765a17;border-radius:11px;padding:12px;font-size:12px;line-height:1.5}.error{background:#fff0f0;color:#a52632;border:1px solid #f2c5c9}.empty{text-align:center;color:var(--muted);padding:22px;font-size:13px}.auth{max-width:420px;margin:32px auto}.status{font-size:12px;color:#c5d4ed;margin-top:8px}.hidden{display:none!important}.right{margin-left:auto}
@@ -47,7 +48,7 @@
 </section>
 <section id="panel-debts" class="panel"><div class="card"><h2>Catat utang pemasok</h2><form id="debtform"><div class="formgrid"><div class="field"><label>Nama pemasok / pihak</label><input id="debt-name" required></div><div class="field"><label>Tanggal utang</label><input id="debt-date" type="date" required></div><div class="field"><label>Jatuh tempo</label><input id="debt-due" type="date"></div><div class="field"><label>Nominal (Rp)</label><input id="debt-amount" type="number" min="1" required></div><div class="field full"><label>Keterangan</label><input id="debt-note"></div></div><button class="btn">Simpan utang</button></form><div id="debt-msg" class="muted"></div></div><h2>Daftar utang</h2><div id="debts-list"></div></section>
 <section id="panel-reports" class="panel">
-<div class="card"><div class="row between"><h2>Laporan keuangan</h2><button class="btn alt small" id="export">Ekspor CSV</button></div>
+<div class="card"><div class="row between"><h2>Laporan keuangan</h2><button class="btn alt small" id="export">Ekspor Excel (.xlsx)</button></div>
 <div class="field"><label>Jenis laporan</label><select id="report-mode"><option value="month">Bulanan</option><option value="day">Harian</option></select></div>
 <div class="field" id="month-field"><label>Bulan laporan</label><input type="month" id="month"></div>
 <div class="field hidden" id="day-field"><label>Tanggal laporan</label><input type="date" id="report-date"></div>
@@ -82,7 +83,7 @@
 <script>
 const CATS={in:['Pendapatan layanan','Farmasi / obat','Laboratorium','Rawat inap','Tindakan','Saldo awal','Pendapatan lain'],out:['Pembelian obat','Gaji dan honor','Operasional klinik','Listrik dan air','Alat medis','Sewa','Perawatan','Administrasi','Pembayaran utang','Pengeluaran lain']};
 let sb=null,user=null,profile=null,txs=[],debts=[],editingTxId=null,financeChart=null,categoryChart=null;
-const $=id=>document.getElementById(id),today=()=>new Date().toISOString().slice(0,10),monthNow=()=>today().slice(0,7);
+const $=id=>document.getElementById(id),today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`},monthNow=()=>today().slice(0,7);
 const money=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n)||0);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const CLINIC_SETTINGS_KEY='kf_clinic_profile_v1';
@@ -145,7 +146,54 @@ let groups={};arr.forEach(t=>{groups[t.category]??={i:0,o:0,count:0};groups[t.ca
 if(r.mode==='month'){let days={};arr.forEach(t=>{days[t.transaction_date]??={i:0,o:0,count:0};days[t.transaction_date][t.type==='in'?'i':'o']+=Number(t.amount);days[t.transaction_date].count++});let dr=Object.entries(days).sort((a,b)=>b[0].localeCompare(a[0]));$('report-table-title').textContent='Rekap harian dalam bulan terpilih';$('daily-report').innerHTML=dr.length?`<div class="tablewrap"><table><thead><tr><th>Tanggal</th><th>Pemasukan</th><th>Pengeluaran</th><th>Selisih</th><th>Transaksi</th></tr></thead><tbody>${dr.map(([d,v])=>`<tr><td>${esc(d)}</td><td class="green">${money(v.i)}</td><td class="red">${money(v.o)}</td><td>${money(v.i-v.o)}</td><td>${v.count}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Belum ada transaksi bulan ini.</div>'}else{$('report-table-title').textContent='Ringkasan hari terpilih';$('daily-report').innerHTML=`<div class="tablewrap"><table><thead><tr><th>Tanggal</th><th>Pemasukan</th><th>Pengeluaran</th><th>Selisih</th><th>Transaksi</th></tr></thead><tbody><tr><td>${esc(r.label)}</td><td class="green">${money(i)}</td><td class="red">${money(o)}</td><td>${money(i-o)}</td><td>${arr.length}</td></tr></tbody></table></div>`}
 $('report-transactions').innerHTML=txTable([...arr].sort((a,b)=>b.transaction_date.localeCompare(a.transaction_date)));}
 $('month').onchange=renderReport;$('report-date').onchange=renderReport;$('report-mode').onchange=renderReport;
-$('export').onclick=()=>{let r=reportRange(),arr=[...r.arr].sort((a,b)=>a.transaction_date.localeCompare(b.transaction_date)),rows=[['Tanggal','Jenis','Kategori','Nominal_Rp','Rekening','Metode','Keterangan'],...arr.map(t=>[t.transaction_date,t.type==='in'?'Pemasukan':'Pengeluaran',t.category,t.amount,t.account,t.method,t.note])];let csv='\ufeff'+rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n'),a=document.createElement('a'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.href=url;a.download=`laporan-klinik-${r.mode}-${r.label}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+$('export').onclick=()=>{
+  const r=reportRange();
+  const arr=[...r.arr].sort((a,b)=>String(a.transaction_date||'').localeCompare(String(b.transaction_date||'')));
+  if(!arr.length){alert('Tidak ada transaksi pada periode laporan yang dipilih.');return}
+  if(!window.XLSX){alert('Fitur Excel belum termuat. Periksa koneksi internet lalu muat ulang halaman.');return}
+  const income=arr.filter(t=>t.type==='in').reduce((sum,t)=>sum+Number(t.amount||0),0);
+  const expense=arr.filter(t=>t.type==='out').reduce((sum,t)=>sum+Number(t.amount||0),0);
+  const summary=[
+    ['LAPORAN KEUANGAN KLINIK'],
+    ['Periode',r.mode==='day'?'Harian':'Bulanan'],
+    ['Tanggal/periode',r.label],
+    ['Dibuat pada',today()],
+    [],
+    ['Ringkasan','Nominal (Rp)'],
+    ['Total pemasukan',income],
+    ['Total pengeluaran',expense],
+    ['Selisih kas',income-expense],
+    ['Jumlah transaksi',arr.length]
+  ];
+  const details=[
+    ['Tanggal','Jenis','Kategori','Nominal (Rp)','Rekening','Metode','Keterangan'],
+    ...arr.map(t=>[t.transaction_date||'',t.type==='in'?'Pemasukan':'Pengeluaran',t.category||'',Number(t.amount||0),t.account||'',t.method||'',t.note||''])
+  ];
+  const grouped={};
+  arr.forEach(t=>{
+    const key=(t.type==='in'?'Pemasukan':'Pengeluaran')+' — '+(t.category||'Tanpa kategori');
+    if(!grouped[key])grouped[key]={jenis:t.type==='in'?'Pemasukan':'Pengeluaran',kategori:t.category||'Tanpa kategori',jumlah:0,count:0};
+    grouped[key].jumlah+=Number(t.amount||0);
+    grouped[key].count++;
+  });
+  const categories=[
+    ['Jenis','Kategori','Total nominal (Rp)','Jumlah transaksi'],
+    ...Object.values(grouped).sort((a,b)=>b.jumlah-a.jumlah).map(v=>[v.jenis,v.kategori,v.jumlah,v.count])
+  ];
+  const wb=XLSX.utils.book_new();
+  const wsSummary=XLSX.utils.aoa_to_sheet(summary);
+  const wsDetails=XLSX.utils.aoa_to_sheet(details);
+  const wsCategories=XLSX.utils.aoa_to_sheet(categories);
+  wsSummary['!cols']=[{wch:28},{wch:24}];
+  wsDetails['!cols']=[{wch:14},{wch:18},{wch:26},{wch:18},{wch:20},{wch:16},{wch:42}];
+  wsCategories['!cols']=[{wch:18},{wch:30},{wch:22},{wch:20}];
+  wsDetails['!autofilter']={ref:`A1:G${details.length}`};
+  wsCategories['!autofilter']={ref:`A1:D${categories.length}`};
+  XLSX.utils.book_append_sheet(wb,wsSummary,'Ringkasan');
+  XLSX.utils.book_append_sheet(wb,wsDetails,'Rincian Transaksi');
+  XLSX.utils.book_append_sheet(wb,wsCategories,'Rekap Kategori');
+  XLSX.writeFile(wb,`laporan-klinik-${r.mode}-${r.label}.xlsx`);
+};
 $('month').value=monthNow();$('report-date').value=today();
 
 $('add-account-form').onsubmit=async e=>{
